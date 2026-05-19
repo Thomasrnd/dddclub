@@ -1,14 +1,17 @@
 const SHEET_ID = '1AObaZIBGZE6GaJrQygh4wpaVjo6rSTSl3AvMvO9Z6WI';
 const SET_NAMES = ['AD01', 'BT25'];
 
-// ⚠️ RAJAONGKIR CONFIG — ganti URL setelah deploy Worker
-const RAJAONGKIR_PROXY = 'https://rajaongkir-proxy.YOUR_SUBDOMAIN.workers.dev';
-const ORIGIN_CITY_ID = '152'; // Jakarta Pusat
+// ⚠️ Ganti URL setelah deploy Worker Biteship
+const BITESHIP_PROXY = 'https://misty-unit-83a0.thomasrnd02.workers.dev';
 
-// ⚠️ SELLER CONFIG — ganti sesuai data toko
-const SELLER_PHONE  = '6281281854172'; // format internasional tanpa +
-const BANK_NUMBER   = '1234567890';    // nomor rekening BCA
-const BANK_NAME     = 'A.N. Nama Toko Gudang Kartu';
+// Origin area_id toko (Jakarta Pusat) — dari Biteship Maps API
+// Sudah di-hardcode supaya tidak perlu fetch setiap saat
+const ORIGIN_AREA_ID = 'IDNP11IDNC149IDND1490';  // Jakarta Pusat, DKI Jakarta
+
+// ⚠️ SELLER CONFIG
+const SELLER_PHONE = '6281281854172';
+const BANK_NUMBER  = '1234567890';
+const BANK_NAME    = 'A.N. Nama Toko Gudang Kartu';
 
 // Cart state
 let cart = JSON.parse(localStorage.getItem('ddd_cart')) || [];
@@ -16,18 +19,16 @@ let allCards = [];
 let currentRarity = 'All';
 
 // Shipping state
-let selectedCityId    = null;
-let selectedCityName  = '';
-let selectedProvinceName = '';
-let selectedOngkir    = null; // { service, cost, etd }
+let selectedArea     = null; // { area_id, name, district, city, province }
+let selectedOngkir   = null; // { courier_name, service, price, min_day, max_day }
+let searchTimeout    = null;
 
-// Order snapshot (filled when modal opens)
+// Order snapshot
 let pendingOrder = null;
 
 // ─── INIT ────────────────────────────────────────────────────
 
 async function init() {
-    // Inject seller config into HTML elements
     document.getElementById('bank-account-number').textContent = BANK_NUMBER;
     document.getElementById('bank-account-name').textContent   = BANK_NAME;
 
@@ -41,7 +42,6 @@ async function init() {
     });
 
     await loadAllSets(document.querySelector('.sidebar-link'));
-    await loadProvinces();
     if (cart.length > 0) updateCartUI();
 }
 
@@ -69,11 +69,9 @@ async function fetchSheetData(setName) {
         return matches ? matches.map(m => m.replace(/^"|"$/g, '').trim()) : [];
     });
     return rows.slice(1).map(row => ({
-        name:  row[0],
-        rarity: row[1],
+        name:  row[0], rarity: row[1],
         stock: parseInt(row[2]) || 0,
-        price: row[3],
-        set:   setName
+        price: row[3], set: setName
     })).filter(c => c.name);
 }
 
@@ -82,14 +80,9 @@ async function loadAllSets(el) {
     document.getElementById('display-title').innerText = 'All Cards';
     showLoader(true);
     let combined = [];
-    for (const set of SET_NAMES) {
-        const data = await fetchSheetData(set);
-        combined = [...combined, ...data];
-    }
+    for (const set of SET_NAMES) combined = [...combined, ...await fetchSheetData(set)];
     allCards = combined;
-    renderRarityMenu();
-    renderCards();
-    showLoader(false);
+    renderRarityMenu(); renderCards(); showLoader(false);
 }
 
 async function loadSet(setName, el) {
@@ -97,9 +90,7 @@ async function loadSet(setName, el) {
     document.getElementById('display-title').innerText = setName;
     showLoader(true);
     allCards = await fetchSheetData(setName);
-    renderRarityMenu();
-    renderCards();
-    showLoader(false);
+    renderRarityMenu(); renderCards(); showLoader(false);
 }
 
 function updateActiveSidebar(el) {
@@ -173,17 +164,9 @@ function addToCart(name, price, stock) {
     const numericPrice = parseInt(price.replace(/,/g, ''));
     const existing = cart.find(item => item.name === name);
     if (existing) {
-        if (existing.qty < stock) {
-            existing.qty++;
-        } else {
-            alert(`Stok hanya tersedia ${stock} pcs.`);
-        }
+        existing.qty < stock ? existing.qty++ : alert(`Stok hanya tersedia ${stock} pcs.`);
     } else {
-        if (stock > 0) {
-            cart.push({ name, price: numericPrice, qty: 1, maxStock: stock });
-        } else {
-            alert('Out of stock!');
-        }
+        stock > 0 ? cart.push({ name, price: numericPrice, qty: 1, maxStock: stock }) : alert('Out of stock!');
     }
     updateCartUI();
     if (!document.getElementById('cart-panel').classList.contains('cart-open')) toggleCart();
@@ -193,15 +176,8 @@ function updateQuantity(name, change) {
     const item = cart.find(i => i.name === name);
     if (!item) return;
     const newQty = item.qty + change;
-    if (newQty > item.maxStock) {
-        alert(`Maksimal stok adalah ${item.maxStock}.`);
-        return;
-    }
-    if (newQty <= 0) {
-        removeFromCart(name);
-    } else {
-        item.qty = newQty;
-    }
+    if (newQty > item.maxStock) { alert(`Maksimal stok adalah ${item.maxStock}.`); return; }
+    newQty <= 0 ? removeFromCart(name) : (item.qty = newQty);
     updateCartUI();
 }
 
@@ -245,12 +221,12 @@ function updateCartUI() {
         container.innerHTML = '<div class="flex flex-col items-center justify-center py-20"><i class="fa fa-shopping-basket text-gray-800 text-4xl mb-4"></i><p class="text-gray-500 text-sm font-medium">Cart is empty</p></div>';
     }
 
-    const deliveryFee = selectedOngkir ? selectedOngkir.cost : 0;
+    const deliveryFee = selectedOngkir ? selectedOngkir.price : 0;
     const grandTotal  = subtotal + deliveryFee;
 
     subtotalEl.innerText = `Rp ${subtotal.toLocaleString()}`;
     deliveryEl.innerText = selectedOngkir
-        ? `Rp ${deliveryFee.toLocaleString()} (JNE ${selectedOngkir.service})`
+        ? `Rp ${deliveryFee.toLocaleString()} (${selectedOngkir.courier_name} ${selectedOngkir.service})`
         : 'Belum dipilih';
     totalEl.innerText = `Rp ${grandTotal.toLocaleString()}`;
     countEl.innerText = count;
@@ -258,72 +234,65 @@ function updateCartUI() {
     saveCartToStorage();
 }
 
-// ─── RAJAONGKIR ──────────────────────────────────────────────
+// ─── BITESHIP ────────────────────────────────────────────────
 
-async function loadProvinces() {
-    try {
-        const res  = await fetch(`${RAJAONGKIR_PROXY}/province`);
-        const data = await res.json();
-        const select = document.getElementById('shipping-province');
-        data.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.province_id;
-            opt.textContent = p.province;
-            select.appendChild(opt);
-        });
-    } catch (e) {
-        console.error('Gagal load provinsi:', e);
-    }
-}
+function onLocationInput() {
+    const query = document.getElementById('shipping-location').value.trim();
+    clearTimeout(searchTimeout);
+    resetOngkirResult();
+    selectedArea   = null;
+    selectedOngkir = null;
+    updateCartUI();
 
-async function onProvinceChange() {
-    const el = document.getElementById('shipping-province');
-    const provinceId = el.value;
-    selectedProvinceName = el.selectedOptions[0]?.text || '';
-
-    selectedCityId = null; selectedCityName = ''; selectedOngkir = null;
-    resetOngkirResult(); updateCartUI();
-
-    const citySelect = document.getElementById('shipping-city');
-    citySelect.innerHTML = '<option value="">Pilih Kota/Kabupaten...</option>';
-    citySelect.disabled = true;
-    document.getElementById('shipping-address').disabled = true;
-    document.getElementById('shipping-address').value = '';
+    document.getElementById('location-results').classList.add('hidden');
     document.getElementById('btn-cek-ongkir').disabled = true;
+    document.getElementById('shipping-address').disabled = true;
 
-    if (!provinceId) return;
+    if (query.length < 3) return;
+
+    searchTimeout = setTimeout(() => searchLocation(query), 400);
+}
+
+async function searchLocation(query) {
+    const resultsEl = document.getElementById('location-results');
+    resultsEl.innerHTML = '<p class="text-gray-500 text-xs p-2">Mencari...</p>';
+    resultsEl.classList.remove('hidden');
 
     try {
-        const res  = await fetch(`${RAJAONGKIR_PROXY}/city?province=${provinceId}`);
-        const data = await res.json();
-        data.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.city_id;
-            opt.textContent = `${c.type} ${c.city_name}`;
-            citySelect.appendChild(opt);
+        const res   = await fetch(`${BITESHIP_PROXY}/maps?input=${encodeURIComponent(query)}`);
+        const areas = await res.json();
+
+        if (!areas.length) {
+            resultsEl.innerHTML = '<p class="text-gray-500 text-xs p-2">Lokasi tidak ditemukan.</p>';
+            return;
+        }
+
+        resultsEl.innerHTML = '';
+        areas.slice(0, 6).forEach(area => {
+            const div = document.createElement('div');
+            div.className = 'px-3 py-2 hover:bg-gray-700 cursor-pointer rounded-lg transition';
+            div.innerHTML = `
+                <p class="text-white text-xs font-bold">${area.name}, ${area.district}</p>
+                <p class="text-gray-500 text-[10px]">${area.city}, ${area.province}</p>
+            `;
+            div.onclick = () => selectLocation(area);
+            resultsEl.appendChild(div);
         });
-        citySelect.disabled = false;
     } catch (e) {
-        console.error('Gagal load kota:', e);
+        resultsEl.innerHTML = '<p class="text-red-400 text-xs p-2">Gagal mencari lokasi.</p>';
     }
 }
 
-function onCityChange() {
-    const el = document.getElementById('shipping-city');
-    selectedCityId   = el.value || null;
-    selectedCityName = el.selectedOptions[0]?.text || '';
-    selectedOngkir   = null;
-    resetOngkirResult(); updateCartUI();
+function selectLocation(area) {
+    selectedArea   = area;
+    selectedOngkir = null;
+    resetOngkirResult();
+    updateCartUI();
 
-    const addr = document.getElementById('shipping-address');
-    const btn  = document.getElementById('btn-cek-ongkir');
-    if (selectedCityId) {
-        addr.disabled = false;
-        btn.disabled  = false;
-    } else {
-        addr.disabled = true; addr.value = '';
-        btn.disabled  = true;
-    }
+    document.getElementById('shipping-location').value = `${area.name}, ${area.district}, ${area.city}`;
+    document.getElementById('location-results').classList.add('hidden');
+    document.getElementById('shipping-address').disabled = false;
+    document.getElementById('btn-cek-ongkir').disabled = false;
 }
 
 function resetOngkirResult() {
@@ -333,7 +302,8 @@ function resetOngkirResult() {
 }
 
 async function checkOngkir() {
-    if (!selectedCityId) return;
+    if (!selectedArea) return;
+
     const btn     = document.getElementById('btn-cek-ongkir');
     const btnText = document.getElementById('ongkir-btn-text');
     const resultEl = document.getElementById('ongkir-result');
@@ -342,42 +312,59 @@ async function checkOngkir() {
     btn.disabled = true;
     resetOngkirResult();
 
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const qty      = cart.reduce((s, i) => s + i.qty, 0);
+
     try {
-        const res   = await fetch(`${RAJAONGKIR_PROXY}/cost`, {
+        const res      = await fetch(`${BITESHIP_PROXY}/rates`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ origin: ORIGIN_CITY_ID, destination: selectedCityId, weight: 50, courier: 'jne' })
+            body: JSON.stringify({
+                origin_area_id:      ORIGIN_AREA_ID,
+                destination_area_id: selectedArea.area_id,
+                quantity: qty || 1,
+                value:    subtotal || 10000,
+                weight:   50 * (qty || 1)
+            })
         });
-        const costs = await res.json();
+        const pricings = await res.json();
 
         resultEl.classList.remove('hidden');
-        if (!costs.length) {
-            resultEl.innerHTML = '<p class="text-yellow-400 text-xs text-center">Tidak ada layanan JNE tersedia.</p>';
+
+        if (!pricings.length) {
+            resultEl.innerHTML = '<p class="text-yellow-400 text-xs text-center p-2">Tidak ada layanan kurir tersedia.</p>';
             return;
         }
 
-        costs.forEach(item => {
-            const cost = item.cost[0];
-            const div  = document.createElement('div');
+        // Sort by price
+        pricings.sort((a, b) => a.price - b.price);
+
+        pricings.forEach(p => {
+            const etd = p.min_day === p.max_day ? `${p.min_day} hari` : `${p.min_day}-${p.max_day} hari`;
+            const div = document.createElement('div');
             div.className = 'flex justify-between items-center p-2 rounded-lg cursor-pointer border border-gray-700 hover:border-blue-400 transition';
-            div.dataset.service = item.service;
-            div.onclick = () => selectOngkir(item.service, cost.value, cost.etd);
+            div.dataset.courier = p.courier_code + p.service_type;
+            div.onclick = () => selectOngkir(p, etd);
             div.innerHTML = `
                 <div>
-                    <p class="text-xs font-black text-white uppercase">JNE ${item.service}</p>
-                    <p class="text-[10px] text-gray-500">${item.description} · ${cost.etd} hari</p>
+                    <p class="text-xs font-black text-white uppercase">${p.courier_name} ${p.courier_service_name}</p>
+                    <p class="text-[10px] text-gray-500">${etd}</p>
                 </div>
-                <p class="text-sm font-black text-green-400">Rp ${cost.value.toLocaleString()}</p>
+                <p class="text-sm font-black text-green-400">Rp ${p.price.toLocaleString()}</p>
             `;
             resultEl.appendChild(div);
         });
 
-        const reg = costs.find(c => c.service === 'REG');
-        if (reg) selectOngkir(reg.service, reg.cost[0].value, reg.cost[0].etd);
+        // Auto-pilih yang termurah
+        const cheapest = pricings[0];
+        const etd0 = cheapest.min_day === cheapest.max_day
+            ? `${cheapest.min_day} hari`
+            : `${cheapest.min_day}-${cheapest.max_day} hari`;
+        selectOngkir(cheapest, etd0);
 
     } catch (e) {
         resultEl.classList.remove('hidden');
-        resultEl.innerHTML = '<p class="text-red-400 text-xs text-center">Gagal cek ongkir. Pastikan proxy Worker sudah di-deploy.</p>';
+        resultEl.innerHTML = '<p class="text-red-400 text-xs text-center p-2">Gagal cek ongkir. Pastikan proxy Worker sudah di-deploy.</p>';
         console.error(e);
     }
 
@@ -385,11 +372,19 @@ async function checkOngkir() {
     btn.disabled = false;
 }
 
-function selectOngkir(service, cost, etd) {
-    selectedOngkir = { service, cost, etd };
+function selectOngkir(p, etd) {
+    selectedOngkir = {
+        courier_name: p.courier_name,
+        courier_code: p.courier_code,
+        service:      p.courier_service_name,
+        price:        p.price,
+        etd
+    };
     updateCartUI();
-    document.querySelectorAll('#ongkir-result > div[data-service]').forEach(el => {
-        const sel = el.dataset.service === service;
+
+    const key = p.courier_code + p.service_type;
+    document.querySelectorAll('#ongkir-result > div[data-courier]').forEach(el => {
+        const sel = el.dataset.courier === key;
         el.classList.toggle('border-blue-500', sel);
         el.classList.toggle('bg-blue-500/10', sel);
         el.classList.toggle('border-gray-700', !sel);
@@ -403,17 +398,16 @@ function processCheckout() {
     const buyerPhone = document.getElementById('buyer-phone').value.trim();
     const address    = document.getElementById('shipping-address').value.trim();
 
-    if (cart.length === 0)       { alert('Keranjang belanja masih kosong!'); return; }
-    if (!buyerName)              { document.getElementById('buyer-name').focus(); alert('Mohon masukkan nama pemesan!'); return; }
-    if (!buyerPhone)             { document.getElementById('buyer-phone').focus(); alert('Mohon masukkan nomor HP/WhatsApp!'); return; }
-    if (!selectedCityId)         { alert('Mohon pilih kota tujuan pengiriman!'); return; }
-    if (!address)                { document.getElementById('shipping-address').focus(); alert('Mohon masukkan alamat lengkap!'); return; }
-    if (!selectedOngkir)         { alert('Mohon cek dan pilih layanan ongkos kirim!'); return; }
+    if (cart.length === 0)    { alert('Keranjang belanja masih kosong!'); return; }
+    if (!buyerName)           { document.getElementById('buyer-name').focus(); alert('Mohon masukkan nama pemesan!'); return; }
+    if (!buyerPhone)          { document.getElementById('buyer-phone').focus(); alert('Mohon masukkan nomor HP/WhatsApp!'); return; }
+    if (!selectedArea)        { document.getElementById('shipping-location').focus(); alert('Mohon pilih lokasi tujuan pengiriman!'); return; }
+    if (!address)             { document.getElementById('shipping-address').focus(); alert('Mohon masukkan alamat lengkap!'); return; }
+    if (!selectedOngkir)      { alert('Mohon cek dan pilih layanan ongkos kirim!'); return; }
 
-    // Build order snapshot
-    const subtotal    = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const grandTotal  = subtotal + selectedOngkir.cost;
-    const alamat      = `${address}, ${selectedCityName}, ${selectedProvinceName}`;
+    const subtotal   = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const grandTotal = subtotal + selectedOngkir.price;
+    const alamat     = `${address}, ${selectedArea.name}, ${selectedArea.district}, ${selectedArea.city}, ${selectedArea.province}`;
 
     pendingOrder = {
         buyerName, buyerPhone, alamat,
@@ -429,30 +423,26 @@ function processCheckout() {
 
 function openPaymentModal() {
     const o = pendingOrder;
-    const modal = document.getElementById('payment-modal');
 
-    // Populate order summary
     const summaryEl = document.getElementById('pay-order-summary');
     summaryEl.innerHTML = o.items.map(i =>
         `<div class="flex justify-between"><span>${i.name} x${i.qty}</span><span>Rp ${(i.price * i.qty).toLocaleString()}</span></div>`
     ).join('') +
-    `<div class="flex justify-between text-gray-500 mt-1"><span>Ongkir JNE ${o.ongkir.service}</span><span>Rp ${o.ongkir.cost.toLocaleString()}</span></div>`;
+    `<div class="flex justify-between text-gray-500 mt-1"><span>${o.ongkir.courier_name} ${o.ongkir.service}</span><span>Rp ${o.ongkir.price.toLocaleString()}</span></div>`;
 
-    document.getElementById('pay-total').textContent = `Rp ${o.grandTotal.toLocaleString()}`;
-
-    // Populate recap
-    document.getElementById('recap-name').textContent    = o.buyerName;
-    document.getElementById('recap-phone').textContent   = o.buyerPhone;
+    document.getElementById('pay-total').textContent    = `Rp ${o.grandTotal.toLocaleString()}`;
+    document.getElementById('recap-name').textContent   = o.buyerName;
+    document.getElementById('recap-phone').textContent  = o.buyerPhone;
     document.getElementById('recap-address').textContent = o.alamat;
-    document.getElementById('recap-ongkir').textContent  = `JNE ${o.ongkir.service} — Rp ${o.ongkir.cost.toLocaleString()} (${o.ongkir.etd} hari)`;
+    document.getElementById('recap-ongkir').textContent = `${o.ongkir.courier_name} ${o.ongkir.service} — Rp ${o.ongkir.price.toLocaleString()} (${o.ongkir.etd})`;
 
-    // Reset to step 1
     showStep('transfer');
     document.getElementById('proof-upload').value = '';
     document.getElementById('proof-preview').classList.add('hidden');
     document.getElementById('upload-placeholder').classList.remove('hidden');
     document.getElementById('btn-submit-order').disabled = true;
 
+    const modal = document.getElementById('payment-modal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 }
@@ -483,11 +473,7 @@ function copyAccountNumber() {
 function previewProof(input) {
     const file = input.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-        alert('File terlalu besar. Maksimal 5MB.');
-        input.value = '';
-        return;
-    }
+    if (file.size > 5 * 1024 * 1024) { alert('File terlalu besar. Maksimal 5MB.'); input.value = ''; return; }
     const reader = new FileReader();
     reader.onload = e => {
         document.getElementById('proof-preview').src = e.target.result;
@@ -506,7 +492,6 @@ function submitOrder() {
         `- ${i.name} (${i.qty}x) = Rp ${(i.price * i.qty).toLocaleString()}`
     ).join('\n');
 
-    // ── WA to SELLER ──────────────────────────────────────────
     const sellerMsg =
 `🛎️ *ORDER MASUK — ${o.orderId}*
 
@@ -517,18 +502,15 @@ function submitOrder() {
 🛒 *Pesanan:*
 ${itemLines}
 
-💰 Subtotal     : Rp ${o.subtotal.toLocaleString()}
-🚚 JNE ${o.ongkir.service} (${o.ongkir.etd}hr): Rp ${o.ongkir.cost.toLocaleString()}
+💰 Subtotal : Rp ${o.subtotal.toLocaleString()}
+🚚 ${o.ongkir.courier_name} ${o.ongkir.service} (${o.ongkir.etd}): Rp ${o.ongkir.price.toLocaleString()}
 ━━━━━━━━━━━━━━━━━━
-💵 *TOTAL BAYAR : Rp ${o.grandTotal.toLocaleString()}*
+💵 *TOTAL: Rp ${o.grandTotal.toLocaleString()}*
 
 ✅ Buyer telah upload bukti transfer.
-📎 _Foto bukti bayar dikirim bersamaan._`;
+📎 _Attach foto bukti bayar dari buyer._`;
 
-    // ── WA to BUYER ───────────────────────────────────────────
-    // Format buyer phone: strip leading 0, add 62
     const buyerWA = o.buyerPhone.replace(/^0/, '62').replace(/\D/g, '');
-
     const buyerMsg =
 `Halo *${o.buyerName}* 👋
 
@@ -539,45 +521,36 @@ Terima kasih sudah berbelanja di *Gudang Kartu*!
 🛒 *Detail Pesanan:*
 ${itemLines}
 
-💰 Subtotal     : Rp ${o.subtotal.toLocaleString()}
-🚚 JNE ${o.ongkir.service} (${o.ongkir.etd} hari): Rp ${o.ongkir.cost.toLocaleString()}
+💰 Subtotal : Rp ${o.subtotal.toLocaleString()}
+🚚 ${o.ongkir.courier_name} ${o.ongkir.service} (${o.ongkir.etd}): Rp ${o.ongkir.price.toLocaleString()}
 ━━━━━━━━━━━━━━━━━━
-💵 *TOTAL         : Rp ${o.grandTotal.toLocaleString()}*
+💵 *TOTAL: Rp ${o.grandTotal.toLocaleString()}*
 
 📍 *Dikirim ke:*
 ${o.alamat}
 
 Pesanan kamu sedang kami proses. Kami akan menghubungi kamu jika ada info lebih lanjut 🙏`;
 
-    // Open both WA tabs
     window.open(`https://wa.me/${SELLER_PHONE}?text=${encodeURIComponent(sellerMsg)}`);
-    setTimeout(() => {
-        window.open(`https://wa.me/${buyerWA}?text=${encodeURIComponent(buyerMsg)}`);
-    }, 800); // slight delay so browser doesn't block both popups
+    setTimeout(() => window.open(`https://wa.me/${buyerWA}?text=${encodeURIComponent(buyerMsg)}`), 800);
 
-    // Reset cart & form
+    // Reset semua
     cart = [];
     saveCartToStorage();
     updateCartUI();
-
-    ['buyer-name', 'buyer-phone', 'shipping-address'].forEach(id => {
-        document.getElementById(id).value = '';
+    ['buyer-name', 'buyer-phone', 'shipping-address', 'shipping-location'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.value = ''; el.disabled = id !== 'buyer-name' && id !== 'buyer-phone'; }
     });
-    document.getElementById('shipping-province').value = '';
-    const citySelect = document.getElementById('shipping-city');
-    citySelect.innerHTML = '<option value="">Pilih Kota/Kabupaten...</option>';
-    citySelect.disabled = true;
-    document.getElementById('shipping-address').disabled = true;
+    document.getElementById('location-results').classList.add('hidden');
     document.getElementById('btn-cek-ongkir').disabled = true;
     resetOngkirResult();
-
-    selectedCityId = null; selectedCityName = ''; selectedProvinceName = ''; selectedOngkir = null;
-    pendingOrder   = null;
+    selectedArea = null; selectedOngkir = null; pendingOrder = null;
 
     showStep('done');
 }
 
-// ─── SEARCH ──────────────────────────────────────────────────
+// ─── SEARCH CARDS ────────────────────────────────────────────
 
 function searchCards() {
     const query = document.getElementById('searchBar').value.toLowerCase();
