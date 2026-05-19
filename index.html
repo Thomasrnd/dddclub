@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gudang Kartu | Marketplace</title>
+    
+    <!-- TailWind & FontAwesome CDNs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="font-sans overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav class="border-b border-gray-800 bg-[#161b22]/95 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-8">
+            <h1 class="text-3xl font-black tracking-tighter text-blue-500 italic">Gudang Kartu</h1>
+            <div class="hidden md:flex bg-gray-900 border border-gray-700 rounded-full px-4 py-2 items-center">
+                <i class="fa fa-search text-gray-500 mr-3 text-sm"></i>
+                <input type="text" id="searchBar" onkeyup="searchCards()" placeholder="Search cards..." class="bg-transparent border-none focus:outline-none text-sm w-72 text-white">
+            </div>
+        </div>
+        <div class="flex items-center gap-6 text-gray-400">
+            <div onclick="toggleCart()" class="relative cursor-pointer hover:text-blue-400 transition">
+                <i class="fa fa-shopping-cart text-xl"></i>
+                <span id="cart-count" class="absolute -top-2 -right-2 bg-blue-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold text-white uppercase shadow-lg">0</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Cart Panel -->
+    <div id="cart-panel" class="fixed right-0 top-0 h-full w-80 bg-[#161b22] border-l border-gray-800 z-[100] transform translate-x-full shadow-2xl flex flex-col">
+        <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <h3 class="text-xl font-bold italic tracking-tight">YOUR CART</h3>
+                <button onclick="clearCart()" class="text-[10px] text-gray-500 hover:text-red-500 uppercase font-black transition">[ Clear ]</button>
+            </div>
+            <i onclick="toggleCart()" class="fa fa-times cursor-pointer hover:text-red-500 transition"></i>
+        </div>
+        
+        <div id="cart-items" class="flex-1 overflow-y-auto p-4 space-y-4">
+            <p class="text-gray-500 text-center mt-10">Cart is empty</p>
+        </div>
+
+        <div class="p-6 border-t border-gray-800 bg-gray-900/50">
+            <!-- Shipping Address -->
+            <div class="mb-4 space-y-2">
+                <label class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 block">Alamat Pengiriman (JNE REG)</label>
+
+                <!-- Provinsi -->
+                <select id="shipping-province" onchange="onProvinceChange()" class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+                    <option value="">Pilih Provinsi...</option>
+                </select>
+
+                <!-- Kota -->
+                <select id="shipping-city" onchange="onCityChange()" disabled class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition disabled:opacity-40">
+                    <option value="">Pilih Kota/Kabupaten...</option>
+                </select>
+
+                <!-- Detail Alamat -->
+                <input type="text" id="shipping-address" placeholder="Nama jalan, no. rumah, RT/RW..." class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition placeholder-gray-600" disabled>
+
+                <!-- Cek Ongkir Button -->
+                <button onclick="checkOngkir()" id="btn-cek-ongkir" disabled class="w-full bg-gray-700 hover:bg-blue-600 text-white font-black text-[11px] py-2.5 rounded-xl transition uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed">
+                    <span id="ongkir-btn-text">Cek Ongkos Kirim</span>
+                </button>
+
+                <!-- Ongkir Result -->
+                <div id="ongkir-result" class="hidden bg-[#0d1117] border border-blue-500/30 rounded-xl p-3 space-y-1.5"></div>
+            </div>
+
+            <div class="space-y-2 mb-6">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-500">Subtotal</span>
+                    <span id="subtotal-price" class="text-gray-300">Rp 0</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-500">JNE Shipping</span>
+                    <span id="delivery-fee" class="text-gray-300">Rp 0</span>
+                </div>
+                <div class="flex justify-between pt-2 border-t border-gray-800">
+                    <span class="text-sm font-bold text-gray-200">Total</span>
+                    <span id="cart-total" class="text-xl font-black text-green-400">Rp 0</span>
+                </div>
+            </div>
+            
+            <div class="mb-4 space-y-3">
+                <div>
+                    <label class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 block">Nama Pemesan</label>
+                    <input type="text" id="buyer-name" placeholder="Masukkan nama lengkap..." class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition placeholder-gray-600">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 block">Nomor HP / WhatsApp</label>
+                    <input type="tel" id="buyer-phone" placeholder="Contoh: 08123456789" class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition placeholder-gray-600">
+                </div>
+            </div>
+            
+            <button onclick="processCheckout()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition shadow-lg active:scale-95 uppercase text-sm tracking-widest">
+                Confirm Order
+            </button>
+        </div>
+    </div>
+
+    <div class="flex">
+        <!-- Sidebar -->
+        <aside class="w-64 h-[calc(100vh-73px)] sticky top-[73px] bg-[#0d1117] border-r border-gray-800 p-6 hidden lg:block overflow-y-auto">
+            <h2 class="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4">Digimon Sets</h2>
+            <ul id="set-menu" class="space-y-2 text-sm text-gray-400">
+                <li onclick="loadAllSets(this)" class="sidebar-link p-2 rounded active">Show All</li>
+            </ul>
+
+            <div id="rarity-section" class="mt-8">
+                <h2 class="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4">Filter Rarity</h2>
+                <ul id="rarity-menu" class="space-y-2 text-sm text-gray-400"></ul>
+            </div>
+        </aside>
+
+        <!-- Main Grid -->
+        <main class="flex-1 p-8 lg:p-12">
+            <header class="mb-12">
+                <h2 id="display-title" class="text-4xl font-black tracking-tight text-white italic uppercase leading-none">All Cards</h2>
+            </header>
+            <div id="loader" class="flex flex-col items-center justify-center py-40">
+                <div class="w-10 h-10 border-4 border-blue-600/20 border-t-blue-500 rounded-full animate-spin"></div>
+            </div>
+            <div id="card-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 hidden"></div>
+        </main>
+    </div>
+
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-[#161b22] border border-gray-800 rounded-3xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto">
+            
+            <!-- Step 1: Transfer Info -->
+            <div id="step-transfer" class="p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-black uppercase tracking-tight">💳 Informasi Transfer</h2>
+                    <button onclick="closePaymentModal()" class="text-gray-500 hover:text-red-500 transition"><i class="fa fa-times"></i></button>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="bg-[#0d1117] rounded-2xl p-4 mb-5 space-y-1.5">
+                    <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Ringkasan Pesanan</p>
+                    <div id="pay-order-summary" class="space-y-1 text-xs text-gray-300"></div>
+                    <div class="border-t border-gray-800 mt-3 pt-3 flex justify-between">
+                        <span class="text-sm text-gray-400 font-bold">Total Bayar</span>
+                        <span id="pay-total" class="text-xl font-black text-green-400"></span>
+                    </div>
+                </div>
+
+                <!-- Bank Info -->
+                <div class="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-5 mb-5">
+                    <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-3">Transfer ke Rekening</p>
+                    <div class="flex items-center gap-4 mb-3">
+                        <div class="bg-blue-600 text-white font-black text-sm px-3 py-1.5 rounded-lg">BCA</div>
+                        <div>
+                            <p class="text-white font-black text-lg tracking-widest" id="bank-account-number">1234567890</p>
+                            <p class="text-gray-400 text-xs" id="bank-account-name">A.N. Nama Toko Gudang Kartu</p>
+                        </div>
+                        <button onclick="copyAccountNumber()" class="ml-auto text-gray-500 hover:text-blue-400 transition" title="Copy nomor rekening">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </div>
+                    <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3">
+                        <p class="text-yellow-400 text-[10px] font-black uppercase">⚠️ Penting</p>
+                        <p class="text-yellow-300/80 text-xs mt-1">Transfer tepat sesuai nominal. Jangan dibulatkan. Simpan bukti transfer sebelum lanjut.</p>
+                    </div>
+                </div>
+
+                <button onclick="goToUploadStep()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition shadow-lg active:scale-95 uppercase text-sm tracking-widest">
+                    Sudah Transfer →
+                </button>
+            </div>
+
+            <!-- Step 2: Upload Bukti -->
+            <div id="step-upload" class="p-8 hidden">
+                <div class="flex items-center gap-3 mb-6">
+                    <button onclick="backToTransfer()" class="text-gray-500 hover:text-white transition"><i class="fa fa-arrow-left"></i></button>
+                    <h2 class="text-xl font-black uppercase tracking-tight">📸 Upload Bukti Bayar</h2>
+                </div>
+
+                <p class="text-gray-400 text-sm mb-5">Upload screenshot bukti transfer kamu. Setelah dikonfirmasi, detail pesanan dan bukti bayar akan dikirim ke WhatsApp seller dan buyer.</p>
+
+                <!-- Upload Area -->
+                <label for="proof-upload" class="block cursor-pointer">
+                    <div id="upload-area" class="border-2 border-dashed border-gray-700 hover:border-blue-500 rounded-2xl p-8 text-center transition mb-4">
+                        <div id="upload-placeholder">
+                            <i class="fa fa-cloud-upload-alt text-3xl text-gray-600 mb-3"></i>
+                            <p class="text-gray-400 text-sm font-bold">Klik atau drag foto bukti transfer</p>
+                            <p class="text-gray-600 text-xs mt-1">JPG, PNG, WEBP — maks. 5MB</p>
+                        </div>
+                        <img id="proof-preview" class="hidden w-full max-h-48 object-contain rounded-xl" alt="Preview bukti bayar">
+                    </div>
+                    <input type="file" id="proof-upload" accept="image/*" class="hidden" onchange="previewProof(this)">
+                </label>
+
+                <!-- Buyer info recap -->
+                <div class="bg-[#0d1117] rounded-xl p-4 mb-5 text-xs space-y-1.5 text-gray-400">
+                    <p><span class="text-gray-600 font-black uppercase">Nama:</span> <span id="recap-name" class="text-white font-bold"></span></p>
+                    <p><span class="text-gray-600 font-black uppercase">No. HP:</span> <span id="recap-phone" class="text-white font-bold"></span></p>
+                    <p><span class="text-gray-600 font-black uppercase">Alamat:</span> <span id="recap-address" class="text-white font-bold"></span></p>
+                    <p><span class="text-gray-600 font-black uppercase">Ongkir:</span> <span id="recap-ongkir" class="text-white font-bold"></span></p>
+                </div>
+
+                <button onclick="submitOrder()" id="btn-submit-order" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-2xl transition shadow-lg active:scale-95 uppercase text-sm tracking-widest" disabled>
+                    <i class="fa fa-whatsapp mr-2"></i> Kirim ke WhatsApp
+                </button>
+                <p class="text-gray-600 text-[10px] text-center mt-3">Akan membuka 2 tab: WhatsApp Seller &amp; WhatsApp Buyer</p>
+            </div>
+
+            <!-- Step 3: Done -->
+            <div id="step-done" class="p-8 text-center hidden">
+                <div class="text-5xl mb-4">✅</div>
+                <h2 class="text-xl font-black mb-2">Pesanan Terkirim!</h2>
+                <p class="text-gray-400 text-sm mb-6">Dua tab WhatsApp sudah terbuka — kirim pesan ke seller beserta foto bukti bayar, lalu kirim konfirmasi ke buyer.</p>
+                <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 mb-6 text-left">
+                    <p class="text-yellow-400 text-xs font-black uppercase mb-1">📎 Jangan lupa!</p>
+                    <p class="text-yellow-300/80 text-xs">Attach foto bukti bayar di tab WhatsApp Seller yang sudah terbuka.</p>
+                </div>
+                <button onclick="closePaymentModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition active:scale-95 uppercase text-sm tracking-widest">
+                    Selesai
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- External JS -->
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+/* Custom Global Styles */
+body { 
+    background-color: #0d1117; 
+    color: #e6edf3; 
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar { 
+    width: 8px; 
+}
+
+::-webkit-scrollbar-track { 
+    background: #0d1117; 
+}
+
+::-webkit-scrollbar-thumb { 
+    background: #30363d; 
+    border-radius: 10px; 
+}
+
+/* Card Hover Animation */
+.card-glow:hover { 
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); 
+    border-color: #3b82f6; 
+    transform: translateY(-4px); 
+}
+
+/* Sidebar Links */
+.sidebar-link { 
+    transition: all 0.2s; 
+    border-left: 3px solid transparent; 
+    cursor: pointer; 
+}
+
+.sidebar-link.active { 
+    border-left-color: #3b82f6; 
+    background: #1f2937; 
+    color: white; 
+    font-weight: bold; 
+}
+
+/* Cart Panel Slide Animation */
+#cart-panel { 
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+.cart-open { 
+    transform: translateX(0) !important; 
+}
