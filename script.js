@@ -12,45 +12,6 @@ const SELLER_PHONE = '6281281854172';
 const BANK_NUMBER  = '1234567890';
 const BANK_NAME    = 'A.N. Nama Toko Gudang Kartu';
 
-// ─── STATIC LOCATION DATA ────────────────────────────────────
-// area_id dari Biteship Maps API (kota-kota utama per provinsi)
-const LOCATIONS = {
-    "Aceh":                  [["Banda Aceh","IDNP1IDNC1IDND10"],["Lhokseumawe","IDNP1IDNC9IDND90"],["Langsa","IDNP1IDNC8IDND80"],["Sabang","IDNP1IDNC15IDND150"]],
-    "Sumatera Utara":        [["Medan","IDNP2IDNC18IDND180"],["Binjai","IDNP2IDNC19IDND190"],["Pematangsiantar","IDNP2IDNC20IDND200"],["Tebing Tinggi","IDNP2IDNC21IDND210"],["Sibolga","IDNP2IDNC22IDND220"]],
-    "Sumatera Barat":        [["Padang","IDNP3IDNC30IDND300"],["Bukittinggi","IDNP3IDNC31IDND310"],["Payakumbuh","IDNP3IDNC32IDND320"],["Solok","IDNP3IDNC33IDND330"]],
-    "Riau":                  [["Pekanbaru","IDNP4IDNC40IDND400"],["Dumai","IDNP4IDNC41IDND410"]],
-    "Kepulauan Riau":        [["Batam","IDNP5IDNC50IDND500"],["Tanjungpinang","IDNP5IDNC51IDND510"]],
-    "Jambi":                 [["Jambi","IDNP6IDNC60IDND600"],["Sungai Penuh","IDNP6IDNC61IDND610"]],
-    "Sumatera Selatan":      [["Palembang","IDNP7IDNC70IDND700"],["Lubuklinggau","IDNP7IDNC71IDND710"],["Prabumulih","IDNP7IDNC72IDND720"],["Pagar Alam","IDNP7IDNC73IDND730"]],
-    "Bangka Belitung":       [["Pangkalpinang","IDNP8IDNC80IDND800"]],
-    "Bengkulu":              [["Bengkulu","IDNP9IDNC90IDND900"]],
-    "Lampung":               [["Bandar Lampung","IDNP10IDNC100IDND1000"],["Metro","IDNP10IDNC101IDND1010"]],
-    "DKI Jakarta":           [["Jakarta Pusat","IDNP11IDNC149IDND1490"],["Jakarta Utara","IDNP11IDNC150IDND1500"],["Jakarta Barat","IDNP11IDNC151IDND1510"],["Jakarta Selatan","IDNP11IDNC152IDND1520"],["Jakarta Timur","IDNP11IDNC153IDND1530"]],
-    "Banten":                [["Serang","IDNP12IDNC120IDND1200"],["Tangerang","IDNP12IDNC121IDND1210"],["Tangerang Selatan","IDNP12IDNC122IDND1220"],["Cilegon","IDNP12IDNC123IDND1230"]],
-    "Jawa Barat":            [["Bandung","IDNP13IDNC130IDND1300"],["Bekasi","IDNP13IDNC131IDND1310"],["Bogor","IDNP13IDNC132IDND1320"],["Depok","IDNP13IDNC133IDND1330"],["Cimahi","IDNP13IDNC134IDND1340"],["Cirebon","IDNP13IDNC135IDND1350"],["Sukabumi","IDNP13IDNC136IDND1360"],["Tasikmalaya","IDNP13IDNC137IDND1370"],["Banjar","IDNP13IDNC138IDND1380"]],
-    "Jawa Tengah":           [["Semarang","IDNP14IDNC140IDND1400"],["Solo","IDNP14IDNC141IDND1410"],["Magelang","IDNP14IDNC142IDND1420"],["Salatiga","IDNP14IDNC143IDND1430"],["Pekalongan","IDNP14IDNC144IDND1440"],["Tegal","IDNP14IDNC145IDND1450"],["Purwokerto","IDNP14IDNC146IDND1460"]],
-    "DI Yogyakarta":         [["Yogyakarta","IDNP15IDNC155IDND1550"],["Sleman","IDNP15IDNC156IDND1560"],["Bantul","IDNP15IDNC157IDND1570"]],
-    "Jawa Timur":            [["Surabaya","IDNP16IDNC160IDND1600"],["Malang","IDNP16IDNC161IDND1610"],["Kediri","IDNP16IDNC162IDND1620"],["Blitar","IDNP16IDNC163IDND1630"],["Madiun","IDNP16IDNC164IDND1640"],["Mojokerto","IDNP16IDNC165IDND1650"],["Pasuruan","IDNP16IDNC166IDND1660"],["Probolinggo","IDNP16IDNC167IDND1670"],["Batu","IDNP16IDNC168IDND1680"]],
-    "Bali":                  [["Denpasar","IDNP17IDNC170IDND1700"],["Badung","IDNP17IDNC171IDND1710"],["Gianyar","IDNP17IDNC172IDND1720"],["Tabanan","IDNP17IDNC173IDND1730"]],
-    "Nusa Tenggara Barat":   [["Mataram","IDNP18IDNC180IDND1800"],["Bima","IDNP18IDNC181IDND1810"]],
-    "Nusa Tenggara Timur":   [["Kupang","IDNP19IDNC190IDND1900"]],
-    "Kalimantan Barat":      [["Pontianak","IDNP20IDNC200IDND2000"],["Singkawang","IDNP20IDNC201IDND2010"]],
-    "Kalimantan Tengah":     [["Palangka Raya","IDNP21IDNC210IDND2100"]],
-    "Kalimantan Selatan":    [["Banjarmasin","IDNP22IDNC220IDND2200"],["Banjarbaru","IDNP22IDNC221IDND2210"]],
-    "Kalimantan Timur":      [["Samarinda","IDNP23IDNC230IDND2300"],["Balikpapan","IDNP23IDNC231IDND2310"],["Bontang","IDNP23IDNC232IDND2320"]],
-    "Kalimantan Utara":      [["Tarakan","IDNP24IDNC240IDND2400"]],
-    "Sulawesi Utara":        [["Manado","IDNP25IDNC250IDND2500"],["Bitung","IDNP25IDNC251IDND2510"],["Tomohon","IDNP25IDNC252IDND2520"]],
-    "Gorontalo":             [["Gorontalo","IDNP26IDNC260IDND2600"]],
-    "Sulawesi Tengah":       [["Palu","IDNP27IDNC270IDND2700"]],
-    "Sulawesi Barat":        [["Mamuju","IDNP28IDNC280IDND2800"]],
-    "Sulawesi Selatan":      [["Makassar","IDNP29IDNC290IDND2900"],["Parepare","IDNP29IDNC291IDND2910"],["Palopo","IDNP29IDNC292IDND2920"]],
-    "Sulawesi Tenggara":     [["Kendari","IDNP30IDNC300IDND3000"],["Baubau","IDNP30IDNC301IDND3010"]],
-    "Maluku":                [["Ambon","IDNP31IDNC310IDND3100"],["Tual","IDNP31IDNC311IDND3110"]],
-    "Maluku Utara":          [["Ternate","IDNP32IDNC320IDND3200"],["Tidore","IDNP32IDNC321IDND3210"]],
-    "Papua Barat":           [["Manokwari","IDNP33IDNC330IDND3300"],["Sorong","IDNP33IDNC331IDND3310"]],
-    "Papua":                 [["Jayapura","IDNP34IDNC340IDND3400"]],
-};
-
 // Cart state
 let cart = JSON.parse(localStorage.getItem('ddd_cart')) || [];
 let allCards = [];
@@ -70,15 +31,6 @@ let pendingOrder = null;
 async function init() {
     document.getElementById('bank-account-number').textContent = BANK_NUMBER;
     document.getElementById('bank-account-name').textContent   = BANK_NAME;
-
-    // Populate province dropdown
-    const provSelect = document.getElementById('shipping-province');
-    Object.keys(LOCATIONS).sort().forEach(prov => {
-        const opt = document.createElement('option');
-        opt.value = prov;
-        opt.textContent = prov;
-        provSelect.appendChild(opt);
-    });
 
     const menu = document.getElementById('set-menu');
     SET_NAMES.forEach(setName => {
@@ -270,44 +222,80 @@ function updateCartUI() {
     saveCartToStorage();
 }
 
-// ─── SHIPPING DROPDOWNS ──────────────────────────────────────
+// ─── SHIPPING SEARCH ─────────────────────────────────────────
 
-function onProvinceChange() {
-    const prov       = document.getElementById('shipping-province').value;
-    selectedProvName = prov;
+let locationSearchTimeout = null;
+
+function onLocationInput() {
+    const query = document.getElementById('shipping-location').value.trim();
+    clearTimeout(locationSearchTimeout);
+
+    // Reset state when user types again
     selectedAreaId   = null;
     selectedCityName = '';
+    selectedProvName = '';
     selectedOngkir   = null;
     resetOngkirResult();
     updateCartUI();
 
-    const citySelect = document.getElementById('shipping-city');
-    citySelect.innerHTML = '<option value="">Pilih Kota/Kabupaten...</option>';
-    citySelect.disabled = !prov;
+    document.getElementById('selected-location-badge').classList.add('hidden');
+    document.getElementById('location-results').classList.add('hidden');
     document.getElementById('shipping-address').disabled = true;
-    document.getElementById('shipping-address').value = '';
-    document.getElementById('btn-cek-ongkir').disabled = true;
+    document.getElementById('btn-cek-ongkir').disabled   = true;
 
-    if (!prov) return;
-    (LOCATIONS[prov] || []).forEach(([cityName, areaId]) => {
-        const opt = document.createElement('option');
-        opt.value = areaId;
-        opt.textContent = cityName;
-        citySelect.appendChild(opt);
-    });
+    if (query.length < 3) return;
+
+    locationSearchTimeout = setTimeout(() => searchLocation(query), 400);
 }
 
-function onCityChange() {
-    const citySelect = document.getElementById('shipping-city');
-    selectedAreaId   = citySelect.value || null;
-    selectedCityName = citySelect.selectedOptions[0]?.text || '';
+async function searchLocation(query) {
+    const resultsEl = document.getElementById('location-results');
+    resultsEl.innerHTML = '<p class="text-gray-500 text-xs p-3 text-center">Mencari...</p>';
+    resultsEl.classList.remove('hidden');
+
+    try {
+        const res   = await fetch(`${BITESHIP_PROXY}/maps?input=${encodeURIComponent(query)}`);
+        const areas = await res.json();
+
+        if (!areas.length) {
+            resultsEl.innerHTML = '<p class="text-gray-500 text-xs p-3 text-center">Lokasi tidak ditemukan.</p>';
+            return;
+        }
+
+        resultsEl.innerHTML = '';
+        areas.slice(0, 8).forEach(area => {
+            const div = document.createElement('div');
+            div.className = 'px-3 py-2.5 hover:bg-gray-600/50 cursor-pointer rounded-lg transition';
+            div.innerHTML = `
+                <p class="text-white text-xs font-bold">${area.administrative_division_level_3_name}, ${area.administrative_division_level_2_name}</p>
+                <p class="text-gray-400 text-[10px]">${area.administrative_division_level_1_name} · ${area.postal_code}</p>
+            `;
+            div.onclick = () => selectLocation(area);
+            resultsEl.appendChild(div);
+        });
+    } catch (e) {
+        resultsEl.innerHTML = '<p class="text-red-400 text-xs p-3 text-center">Gagal mencari lokasi. Coba lagi.</p>';
+        console.error(e);
+    }
+}
+
+function selectLocation(area) {
+    selectedAreaId   = area.id;
+    selectedCityName = area.administrative_division_level_2_name;
+    selectedProvName = area.administrative_division_level_1_name;
     selectedOngkir   = null;
     resetOngkirResult();
     updateCartUI();
 
-    document.getElementById('shipping-address').disabled = !selectedAreaId;
-    if (!selectedAreaId) document.getElementById('shipping-address').value = '';
-    document.getElementById('btn-cek-ongkir').disabled = !selectedAreaId;
+    // Show selected badge
+    const label = `${area.administrative_division_level_3_name}, ${area.administrative_division_level_2_name}, ${area.administrative_division_level_1_name}`;
+    document.getElementById('shipping-location').value       = '';
+    document.getElementById('shipping-location').placeholder = label;
+    document.getElementById('selected-location-text').textContent = '📍 ' + label;
+    document.getElementById('selected-location-badge').classList.remove('hidden');
+    document.getElementById('location-results').classList.add('hidden');
+    document.getElementById('shipping-address').disabled = false;
+    document.getElementById('btn-cek-ongkir').disabled   = false;
 }
 
 function resetOngkirResult() {
@@ -536,13 +524,14 @@ Pesanan kamu sedang kami proses 🙏`;
     cart = [];
     saveCartToStorage();
     updateCartUI();
-    ['buyer-name','buyer-phone','shipping-address'].forEach(id => { document.getElementById(id).value = ''; });
-    document.getElementById('shipping-province').value = '';
-    const citySelect = document.getElementById('shipping-city');
-    citySelect.innerHTML = '<option value="">Pilih Kota/Kabupaten...</option>';
-    citySelect.disabled = true;
+    ['buyer-name','buyer-phone','shipping-address','shipping-location'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.value = ''; el.placeholder = id === 'shipping-location' ? 'Cari kecamatan / kota...' : el.placeholder; }
+    });
     document.getElementById('shipping-address').disabled = true;
-    document.getElementById('btn-cek-ongkir').disabled = true;
+    document.getElementById('btn-cek-ongkir').disabled   = true;
+    document.getElementById('selected-location-badge').classList.add('hidden');
+    document.getElementById('location-results').classList.add('hidden');
     resetOngkirResult();
     selectedAreaId = null; selectedCityName = ''; selectedProvName = ''; selectedOngkir = null; pendingOrder = null;
 
