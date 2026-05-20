@@ -50,15 +50,19 @@
             <div class="mb-4 space-y-2">
                 <label class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 block">Alamat Pengiriman</label>
 
-                <!-- Provinsi -->
-                <select id="shipping-province" onchange="onProvinceChange()" class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
-                    <option value="">Pilih Provinsi...</option>
-                </select>
+                <!-- Location Search -->
+                <div class="relative">
+                    <input type="text" id="shipping-location" oninput="onLocationInput()"
+                        placeholder="Cari kecamatan / kota..."
+                        autocomplete="off"
+                        class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition placeholder-gray-600">
+                    <div id="location-results" class="hidden absolute z-10 w-full mt-1 bg-[#1f2937] border border-gray-700 rounded-xl shadow-xl p-1 max-h-48 overflow-y-auto"></div>
+                </div>
 
-                <!-- Kota -->
-                <select id="shipping-city" onchange="onCityChange()" disabled class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition disabled:opacity-40">
-                    <option value="">Pilih Kota/Kabupaten...</option>
-                </select>
+                <!-- Selected location badge -->
+                <div id="selected-location-badge" class="hidden bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-2">
+                    <p id="selected-location-text" class="text-blue-400 text-xs font-bold truncate"></p>
+                </div>
 
                 <!-- Detail Alamat -->
                 <input type="text" id="shipping-address" placeholder="Nama jalan, no. rumah, RT/RW..."
