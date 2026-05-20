@@ -255,7 +255,10 @@ async function searchLocation(query) {
 
     try {
         const res   = await fetch(`${BITESHIP_PROXY}/maps?input=${encodeURIComponent(query)}`);
-        const areas = await res.json();
+        const data  = await res.json();
+        
+        // PERBAIKAN 1: Array area pada Biteship dibungkus dalam properti 'areas'
+        const areas = data.areas || data || [];
 
         if (!areas.length) {
             resultsEl.innerHTML = '<p class="text-gray-500 text-xs p-3 text-center">Lokasi tidak ditemukan.</p>';
@@ -319,18 +322,28 @@ async function checkOngkir() {
     const qty      = cart.reduce((s, i) => s + i.qty, 0);
 
     try {
-        const res      = await fetch(`${BITESHIP_PROXY}/rates`, {
+        // PERBAIKAN 2: Sesuaikan body request dengan spesifikasi Bikeship (tambahkan couriers & format items)
+        const res = await fetch(`${BITESHIP_PROXY}/rates`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                origin_area_id:      ORIGIN_AREA_ID,
+                origin_area_id: ORIGIN_AREA_ID,
                 destination_area_id: selectedAreaId,
-                quantity: qty  || 1,
-                value:    subtotal || 10000,
-                weight:   50 * (qty || 1)
+                couriers: "jne,jnt,sicepat,anteraja,paxel", // Tentukan kurir yang ingin dicek di sini
+                items: [
+                    {
+                        name: "Kartu TCG",
+                        value: subtotal || 10000,
+                        weight: 50 * (qty || 1), // Asumsi 1 kartu = 50 gram
+                        quantity: 1
+                    }
+                ]
             })
         });
-        const pricings = await res.json();
+        const data = await res.json();
+        
+        // PERBAIKAN 3: Array harga pada Biteship dibungkus dalam properti 'pricing'
+        const pricings = data.pricing || data || [];
 
         resultEl.classList.remove('hidden');
         if (!pricings.length) {
@@ -340,7 +353,9 @@ async function checkOngkir() {
 
         pricings.sort((a, b) => a.price - b.price);
         pricings.forEach(p => {
-            const etd = p.min_day === p.max_day ? `${p.min_day} hari` : `${p.min_day}-${p.max_day} hari`;
+            // PERBAIKAN 4: Gunakan properti 'duration' dari API, fallback ke min_day/max_day
+            const etd = p.duration ? p.duration : (p.min_day === p.max_day ? `${p.min_day} hari` : `${p.min_day}-${p.max_day} hari`);
+            
             const div = document.createElement('div');
             div.className = 'flex justify-between items-center p-2 rounded-lg cursor-pointer border border-gray-700 hover:border-blue-400 transition';
             div.dataset.key = p.courier_code + p.service_type;
@@ -355,15 +370,14 @@ async function checkOngkir() {
             resultEl.appendChild(div);
         });
 
-        // Auto-pilih termurah
+        // Auto-pilih kurir paling murah
         const cheapest = pricings[0];
-        const etd0 = cheapest.min_day === cheapest.max_day
-            ? `${cheapest.min_day} hari` : `${cheapest.min_day}-${cheapest.max_day} hari`;
+        const etd0 = cheapest.duration ? cheapest.duration : (cheapest.min_day === cheapest.max_day ? `${cheapest.min_day} hari` : `${cheapest.min_day}-${cheapest.max_day} hari`);
         selectOngkir(cheapest, etd0);
 
     } catch (e) {
         resultEl.classList.remove('hidden');
-        resultEl.innerHTML = '<p class="text-red-400 text-xs text-center p-2">Gagal cek ongkir. Pastikan proxy Worker sudah di-deploy.</p>';
+        resultEl.innerHTML = '<p class="text-red-400 text-xs text-center p-2">Gagal cek ongkir. Pastikan proxy Worker sudah di-deploy dan API key valid.</p>';
         console.error(e);
     }
 
