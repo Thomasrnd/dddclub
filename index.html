@@ -41,26 +41,9 @@
             <p class="text-gray-500 text-center mt-10">Cart is empty</p>
         </div>
 
-        <div class="p-6 border-t border-gray-800 bg-gray-900/50">
-            <div class="mb-6 space-y-3">
-                <div>
-                    <label class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 block">Kota / Provinsi Tujuan</label>
-                    <select id="shipping-location" onchange="onLocationChange()"
-                        class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition appearance-none cursor-pointer">
-                        <option value="" disabled selected>Pilih area pengiriman...</option>
-                        </select>
-                </div>
-
-                <div id="ongkir-result" class="hidden bg-[#0d1117] border border-blue-500/30 rounded-xl p-3 mt-2"></div>
-
-                <div>
-                    <label class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 block">Alamat Lengkap</label>
-                    <textarea id="shipping-address" rows="3" placeholder="Nama jalan, no. rumah, RT/RW, Kelurahan, Kecamatan, Kodepos..."
-                        class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition placeholder-gray-600 resize-none"></textarea>
-                </div>
-            </div>
-
-            <div class="space-y-2 mb-6">
+        <div class="p-6 border-t border-gray-800 bg-gray-900/50 flex flex-col">
+            
+            <div class="space-y-2 mb-4">
                 <div class="flex justify-between text-xs">
                     <span class="text-gray-500">Subtotal</span>
                     <span id="subtotal-price" class="text-gray-300">Rp 0</span>
@@ -74,19 +57,44 @@
                     <span id="cart-total" class="text-xl font-black text-green-400">Rp 0</span>
                 </div>
             </div>
+
+            <button onclick="toggleCheckoutForm()" class="w-full flex justify-between items-center bg-[#0d1117] border border-gray-800 p-3 rounded-xl mb-4 hover:border-gray-600 transition group">
+                <div class="flex items-center gap-2">
+                    <i id="form-status-icon" class="fa fa-exclamation-circle text-yellow-500"></i>
+                    <span class="text-[11px] font-black text-gray-400 uppercase tracking-widest group-hover:text-white transition">Data Pengiriman</span>
+                </div>
+                <i id="form-chevron" class="fa fa-chevron-down text-gray-500 transition-transform"></i>
+            </button>
             
-            <div class="mb-4 space-y-3">
+            <div id="checkout-form-container" class="hidden space-y-3 mb-6 bg-[#0d1117] p-4 rounded-xl border border-gray-800">
+                <div>
+                    <label class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 block">Kota / Provinsi</label>
+                    <select id="shipping-location" onchange="onLocationChange()"
+                        class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition appearance-none cursor-pointer">
+                        <option value="" disabled selected>Pilih area pengiriman...</option>
+                        </select>
+                </div>
+                <div id="ongkir-result" class="hidden bg-gray-900 border border-blue-500/30 rounded-lg p-2"></div>
+
+                <div>
+                    <label class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 block">Alamat Lengkap</label>
+                    <textarea id="shipping-address" rows="2" oninput="checkFormCompletion()" placeholder="Nama jalan, RT/RW, Kec..."
+                        class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition placeholder-gray-600 resize-none"></textarea>
+                </div>
+
                 <div>
                     <label class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 block">Nama Pemesan</label>
-                    <input type="text" id="buyer-name" placeholder="Masukkan nama lengkap..." class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition placeholder-gray-600">
+                    <input type="text" id="buyer-name" oninput="checkFormCompletion()" placeholder="Masukkan nama..." class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition placeholder-gray-600">
                 </div>
+
                 <div>
-                    <label class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 block">Nomor HP / WhatsApp</label>
-                    <input type="tel" id="buyer-phone" placeholder="Contoh: 08123456789" class="w-full bg-[#0d1117] border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition placeholder-gray-600">
+                    <label class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 block">No HP / WhatsApp</label>
+                    <input type="tel" id="buyer-phone" oninput="checkFormCompletion()" placeholder="Contoh: 08123456789" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition placeholder-gray-600">
                 </div>
             </div>
-            
-            <button onclick="processCheckout()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition shadow-lg active:scale-95 uppercase text-sm tracking-widest">
+
+            <button id="btn-confirm-order" onclick="processCheckout()" disabled
+                class="w-full mt-auto bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl transition shadow-lg active:scale-95 disabled:active:scale-100 uppercase text-sm tracking-widest">
                 Confirm Order
             </button>
         </div>
@@ -115,7 +123,6 @@
             <div id="card-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 hidden"></div>
         </main>
     </div>
-
 
     <div id="payment-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
         <div class="bg-[#161b22] border border-gray-800 rounded-3xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto">
