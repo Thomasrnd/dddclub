@@ -2,13 +2,13 @@ const SHEET_ID = '1AObaZIBGZE6GaJrQygh4wpaVjo6rSTSl3AvMvO9Z6WI';
 const SET_NAMES = ['AD01', 'BT25'];
 
 // ⚠️ Ganti URL setelah deploy Worker Biteship
-const BITESHIP_PROXY = 'https://biteship-proxy.YOUR_SUBDOMAIN.workers.dev';
+const BITESHIP_PROXY = 'https://misty-unit-83a0.thomasrnd02.workers.dev';
 
 // Origin toko: Jakarta Pusat (Biteship area_id)
 const ORIGIN_AREA_ID = 'IDNP6IDNC147IDND829IDZ10110'; // Gambir, Jakarta Pusat
 
 // ⚠️ SELLER CONFIG
-const SELLER_PHONE = '628XXXXXXXXXX';
+const SELLER_PHONE = '6281281854172';
 const BANK_NUMBER  = '1234567890';
 const BANK_NAME    = 'A.N. Nama Toko Gudang Kartu';
 
