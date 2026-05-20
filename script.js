@@ -41,8 +41,6 @@ let currentRarity = 'All';
 // Shipping state
 let selectedLocationName = null;
 let selectedOngkir = null;
-
-// Order snapshot
 let pendingOrder = null;
 
 // ─── INIT ────────────────────────────────────────────────────
@@ -71,6 +69,52 @@ async function init() {
 
     await loadAllSets(document.querySelector('.sidebar-link'));
     if (cart.length > 0) updateCartUI();
+    
+    // Periksa status kelengkapan form di awal
+    checkFormCompletion();
+}
+
+// ─── FORM VALIDATION & TOGGLE ────────────────────────────────
+
+// Fungsi untuk membuka / menutup form pengiriman
+function toggleCheckoutForm() {
+    const container = document.getElementById('checkout-form-container');
+    const chevron   = document.getElementById('form-chevron');
+    
+    container.classList.toggle('hidden');
+    
+    if (container.classList.contains('hidden')) {
+        chevron.style.transform = 'rotate(0deg)';
+    } else {
+        chevron.style.transform = 'rotate(180deg)';
+    }
+}
+
+// Fungsi mengecek apakah semua field terisi & cart ada isinya
+function checkFormCompletion() {
+    const buyerName   = document.getElementById('buyer-name').value.trim();
+    const buyerPhone  = document.getElementById('buyer-phone').value.trim();
+    const address     = document.getElementById('shipping-address').value.trim();
+    const locationSel = document.getElementById('shipping-location').value;
+    
+    const btnConfirm  = document.getElementById('btn-confirm-order');
+    const iconStatus  = document.getElementById('form-status-icon');
+
+    const isFormComplete = buyerName && buyerPhone && address && locationSel;
+
+    // Aktifkan / Matikan Tombol Confirm
+    if (isFormComplete && cart.length > 0) {
+        btnConfirm.disabled = false;
+    } else {
+        btnConfirm.disabled = true;
+    }
+
+    // Ubah ikon status di tombol toggle
+    if (isFormComplete) {
+        iconStatus.className = 'fa fa-check-circle text-green-500';
+    } else {
+        iconStatus.className = 'fa fa-exclamation-circle text-yellow-500';
+    }
 }
 
 // ─── STORAGE ─────────────────────────────────────────────────
@@ -248,6 +292,7 @@ function updateCartUI() {
     countEl.innerText = count;
 
     saveCartToStorage();
+    checkFormCompletion(); // Evaluasi tombol submit saat cart diubah
 }
 
 // ─── SHIPPING SEARCH (MANUAL) ────────────────────────────────
@@ -262,7 +307,7 @@ function onLocationChange() {
     if (dataOngkir) {
         resultEl.classList.remove('hidden');
         resultEl.innerHTML = `
-            <div class="flex justify-between items-center bg-blue-900/20 rounded-lg p-2 border border-blue-400">
+            <div class="flex justify-between items-center">
                 <div>
                     <p class="text-xs font-black text-white uppercase">JNE REGULER</p>
                     <p class="text-[10px] text-gray-500">${dataOngkir.etd}</p>
@@ -279,6 +324,8 @@ function onLocationChange() {
         };
         updateCartUI();
     }
+    
+    checkFormCompletion(); // Evaluasi tombol submit setelah ganti lokasi
 }
 
 // ─── CHECKOUT ────────────────────────────────────────────────
@@ -290,11 +337,11 @@ function processCheckout() {
     const locationSel = document.getElementById('shipping-location').value;
 
     if (cart.length === 0)   { alert('Keranjang belanja masih kosong!'); return; }
-    if (!buyerName)          { document.getElementById('buyer-name').focus(); alert('Mohon masukkan nama pemesan!'); return; }
-    if (!buyerPhone)         { document.getElementById('buyer-phone').focus(); alert('Mohon masukkan nomor HP/WhatsApp!'); return; }
-    if (!locationSel)        { document.getElementById('shipping-location').focus(); alert('Mohon pilih Kota/Provinsi tujuan dari dropdown!'); return; }
-    if (!address)            { document.getElementById('shipping-address').focus(); alert('Mohon masukkan alamat lengkap!'); return; }
-    if (!selectedOngkir)     { alert('Terjadi kesalahan pada ongkos kirim. Silakan pilih ulang area pengiriman.'); return; }
+    if (!buyerName || !buyerPhone || !locationSel || !address) {
+        alert('Data belum lengkap. Silakan lengkapi form pengiriman.');
+        return;
+    }
+    if (!selectedOngkir) { alert('Terjadi kesalahan pada ongkos kirim. Silakan pilih ulang area pengiriman.'); return; }
 
     const subtotal   = cart.reduce((s, i) => s + i.price * i.qty, 0);
     const grandTotal = subtotal + selectedOngkir.price;
@@ -438,6 +485,9 @@ Pesanan kamu sedang kami proses 🙏`;
     
     updateCartUI();
     showStep('done');
+    
+    // Matikan kembali tombol setelah form diclear
+    checkFormCompletion(); 
 }
 
 // ─── SEARCH ──────────────────────────────────────────────────
