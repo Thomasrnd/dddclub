@@ -2,7 +2,7 @@ const SHEET_ID = '1AObaZIBGZE6GaJrQygh4wpaVjo6rSTSl3AvMvO9Z6WI';
 const SET_NAMES = ['AD01', 'BT25'];
 
 // ⚠️ Ganti URL setelah deploy Worker Biteship
-const BITESHIP_PROXY = 'https://biteship-proxy.YOUR_SUBDOMAIN.workers.dev';
+const BITESHIP_PROXY = 'https://misty-unit-83a0.thomasrnd02.workers.dev';
 
 // Origin toko: Jakarta Pusat (Biteship area_id)
 const ORIGIN_AREA_ID = 'IDNP11IDNC149IDND1490';
